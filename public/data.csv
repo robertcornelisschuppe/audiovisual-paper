@@ -1,0 +1,12 @@
+id,title,parentId,videoUrl,citations,fullTextUrl
+1,Introduction,,https://www.youtube.com/watch?v=aqz-KE-bpKQ,"Köhler (2026){https://www.degruyterbrill.com/document/doi/10.1515/9783112208205/html}; von Staden (2026) {https://www.degruyterbrill.com/document/doi/10.1515/9783112215753/html}",https://www.degruyterbrill.com/document/doi/10.1515/9783112208205/html
+2,Methodology,,https://www.youtube.com/watch?v=9No-FiEInLA,,https://www.degruyterbrill.com/document/doi/10.1515/9783112215753/html
+3,Results,,https://www.youtube.com/watch?v=ScMzIvxBSi4,,
+4,Discussion,,https://www.youtube.com/watch?v=jNQXAC9IVRw,,
+5,Conclusion,,https://www.youtube.com/watch?v=60ItHLz5WEA,,
+1.1,Background,1,https://www.youtube.com/watch?v=aqz-KE-bpKQ,,
+1.2,Research Question,1,https://www.youtube.com/watch?v=9No-FiEInLA,,
+1.1.1,Literature Review,1.1,https://www.youtube.com/watch?v=ScMzIvxBSi4,,
+1.1.2,Gap Analysis,1.1,https://www.youtube.com/watch?v=jNQXAC9IVRw,,
+2.1,Data Collection,2,https://www.youtube.com/watch?v=60ItHLz5WEA,,
+2.2,Analysis Framework,2,https://www.youtube.com/watch?v=aqz-KE-bpKQ,,
