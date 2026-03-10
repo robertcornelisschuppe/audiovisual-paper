@@ -14,16 +14,19 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
   useEffect(() => {
     if (!svgRef.current || !data) return;
 
-    const width = 1200;
-    const height = 800;
+    const container = svgRef.current.parentElement;
+    if (!container) return;
+    const { width, height } = container.getBoundingClientRect();
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
 
     const g = svg.append('g');
 
-    // Define arrowhead marker
-    svg.append('defs').append('marker')
+    // Define arrowhead marker and gradients
+    const defs = svg.append('defs');
+    
+    defs.append('marker')
       .attr('id', 'arrowhead')
       .attr('viewBox', '-0 -5 10 10')
       .attr('refX', 5)
@@ -34,8 +37,22 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
       .attr('xoverflow', 'visible')
       .append('svg:path')
       .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
-      .attr('fill', '#3b82f6')
+      .attr('fill', '#818cf8')
       .style('stroke', 'none');
+
+    const gradient = defs.append('radialGradient')
+      .attr('id', 'node-gradient')
+      .attr('cx', '50%')
+      .attr('cy', '50%')
+      .attr('r', '50%');
+    
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#ffffff');
+    
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#fdfcfb');
 
     // Add zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -48,7 +65,7 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
 
     // Use nodeSize instead of size for more even spacing
     const treeLayout = d3.tree<HierarchyNode>()
-      .nodeSize([240, 220]); 
+      .nodeSize([280, 240]); 
 
     const root = d3.hierarchy(data);
     treeLayout(root);
@@ -58,46 +75,70 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
     const linksData = root.links().filter(l => l.source.data.id !== 'root');
     const topLevelNodes = nodesData.filter(d => d.depth === 1).sort((a, b) => a.x - b.x);
 
-    // Initial transform to center the tree
-    const rootChildrenCount = data.children?.length || 1;
-    const initialX = 600 - (rootChildrenCount * 140);
-    svg.call(zoom.transform as any, d3.zoomIdentity.translate(initialX, 150).scale(0.7));
+    // Calculate bounding box of all nodes to fit to screen
+    const xExtent = d3.extent(nodesData, d => d.x) as [number, number];
+    const yExtent = d3.extent(nodesData, d => d.y - 100) as [number, number];
+    
+    // Include the header in the bounding box
+    const minY = Math.min(yExtent[0], -400);
+    const maxY = yExtent[1] + 200;
+    const minX = xExtent[0] - 200; 
+    const maxX = xExtent[1] + 200;
+
+    const treeWidth = maxX - minX;
+    const treeHeight = maxY - minY;
+    
+    const padding = 80;
+    const scale = Math.min(
+      (width - padding * 2) / treeWidth,
+      (height - padding * 2) / treeHeight,
+      0.7
+    );
+    
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+    
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(scale)
+      .translate(-centerX, -centerY);
+
+    svg.call(zoom.transform as any, transform);
 
     // Draw Study Header
     const headerGroup = g.append('g')
-      .attr('transform', `translate(0, -250)`);
+      .attr('transform', `translate(0, -320)`);
 
     headerGroup.append('text')
       .attr('text-anchor', 'middle')
-      .attr('class', 'text-4xl font-black fill-slate-900 uppercase tracking-widest')
+      .attr('class', 'serif text-6xl font-light fill-slate-800 tracking-tight italic')
       .text(studyTitle);
 
-    headerGroup.append('rect')
-      .attr('x', -150)
-      .attr('y', 20)
-      .attr('width', 300)
-      .attr('height', 4)
-      .attr('fill', '#3b82f6')
-      .attr('rx', 2);
+    headerGroup.append('line')
+      .attr('x1', -100)
+      .attr('y1', 40)
+      .attr('x2', 100)
+      .attr('y2', 40)
+      .attr('stroke', '#818cf8')
+      .attr('stroke-width', 1)
+      .attr('stroke-opacity', 0.5);
 
     // Draw horizontal line connecting main chapters
     if (topLevelNodes.length > 1) {
       const first = topLevelNodes[0];
       const last = topLevelNodes[topLevelNodes.length - 1];
       
-      g.append('line')
-        .attr('x1', first.x)
-        .attr('y1', first.y - 100)
-        .attr('x2', last.x + 100) // Extend further for the arrow
-        .attr('y2', last.y - 100)
-        .attr('stroke', '#3b82f6')
-        .attr('stroke-width', 4)
-        .attr('stroke-opacity', 0.4)
-        .attr('stroke-linecap', 'round')
+      g.append('path')
+        .attr('d', `M ${first.x} ${first.y - 120} L ${last.x + 120} ${last.y - 120}`)
+        .attr('fill', 'none')
+        .attr('stroke', '#818cf8')
+        .attr('stroke-width', 2)
+        .attr('stroke-opacity', 0.3)
+        .attr('stroke-dasharray', '4,4')
         .attr('marker-end', 'url(#arrowhead)');
     }
 
-    // Draw links
+    // Draw links (curved)
     g.selectAll('.link')
       .data(linksData)
       .enter()
@@ -105,8 +146,8 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
       .attr('class', 'link')
       .attr('fill', 'none')
       .attr('stroke', '#cbd5e1')
-      .attr('stroke-width', 2)
-      .attr('stroke-dasharray', '6,4')
+      .attr('stroke-width', 1)
+      .attr('stroke-opacity', 0.5)
       .attr('d', d3.linkVertical()
         .x((d: any) => d.x)
         .y((d: any) => d.y - 100) as any);
@@ -121,42 +162,43 @@ const VideoTree: React.FC<VideoTreeProps> = ({ data, onNodeClick, studyTitle = "
       .on('click', (event, d) => onNodeClick(d.data))
       .style('cursor', 'pointer');
 
-    // Node circles (representing videos)
+    // Node circles with shadow and gradient
     nodes.append('circle')
-      .attr('r', (d: any) => Math.max(20, 50 / (d.depth))) // Main chapters bigger
-      .attr('fill', '#fff')
-      .attr('stroke', '#3b82f6')
-      .attr('stroke-width', 3)
-      .attr('class', 'transition-all duration-300 hover:stroke-blue-400 hover:r-12');
+      .attr('r', (d: any) => Math.max(24, 60 / (d.depth)))
+      .attr('fill', 'url(#node-gradient)')
+      .attr('stroke', '#818cf8')
+      .attr('stroke-width', (d: any) => d.depth === 1 ? 3 : 2)
+      .attr('class', 'transition-all duration-500 hover:stroke-indigo-400')
+      .style('filter', 'drop-shadow(0 4px 6px rgba(0,0,0,0.05))');
 
     // Play icon
     nodes.append('path')
-      .attr('d', 'M -4 -6 L 8 0 L -4 6 Z')
-      .attr('fill', '#3b82f6')
-      .attr('transform', (d: any) => `scale(${1.5 / (d.depth)})`);
+      .attr('d', 'M -3 -5 L 6 0 L -3 5 Z')
+      .attr('fill', '#818cf8')
+      .attr('transform', (d: any) => `scale(${1.8 / (d.depth)})`);
 
     // Labels
     nodes.append('text')
-      .attr('dy', (d: any) => Math.max(20, 50 / (d.depth)) + 25)
+      .attr('dy', (d: any) => Math.max(24, 60 / (d.depth)) + 45)
       .attr('text-anchor', 'middle')
-      .attr('class', 'text-sm font-bold fill-slate-800')
+      .attr('class', 'serif text-2xl font-semibold fill-slate-800')
       .text((d: any) => d.data.title);
 
     nodes.append('text')
-      .attr('dy', (d: any) => Math.max(20, 50 / (d.depth)) + 42)
+      .attr('dy', (d: any) => Math.max(24, 60 / (d.depth)) + 70)
       .attr('text-anchor', 'middle')
-      .attr('class', 'text-[10px] font-medium fill-slate-400 uppercase tracking-tighter')
+      .attr('class', 'text-[11px] font-bold fill-slate-400 uppercase tracking-[0.2em]')
       .text((d: any) => `Chapter ${d.data.id}`);
 
   }, [data, onNodeClick]);
 
   return (
-    <div className="w-full h-full overflow-auto bg-slate-50 rounded-2xl border border-slate-200 shadow-inner">
+    <div className="w-full h-full overflow-hidden bg-[#fdfcfb]">
       <svg
         ref={svgRef}
-        width={1200}
-        height={800}
-        className="mx-auto"
+        width="100%"
+        height="100%"
+        className="w-full h-full"
       />
     </div>
   );
