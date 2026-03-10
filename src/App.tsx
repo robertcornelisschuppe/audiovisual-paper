@@ -20,13 +20,21 @@ export default function App() {
     Papa.parse(csvString, {
       header: true,
       skipEmptyLines: true,
+      transformHeader: (header) => header.trim(),
       complete: (results) => {
+        console.log('CSV Parse Results:', results);
         const data = results.data as VideoNode[];
-        if (data.length > 0 && data[0].id && data[0].title) {
-          setVideoData(data);
-          setError(null);
+        if (data.length > 0) {
+          const firstRow = data[0];
+          if (firstRow.id && firstRow.title) {
+            setVideoData(data);
+            setError(null);
+          } else {
+            const foundHeaders = Object.keys(firstRow).join(', ');
+            setError(`Invalid CSV format. Missing 'id' or 'title' in the first row. Found headers: ${foundHeaders}. Please ensure headers: id, title, parentId, videoUrl`);
+          }
         } else {
-          setError("Invalid CSV format. Please ensure headers: id, title, parentId, videoUrl");
+          setError("The CSV file appears to be empty.");
         }
       },
       error: (err) => {
@@ -37,13 +45,27 @@ export default function App() {
 
   // Initialize with data from CSV file
   React.useEffect(() => {
-    fetch('/data.csv')
-      .then(response => response.text())
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const csvUrl = `${baseUrl.endsWith('/') ? baseUrl : baseUrl + '/'}data.csv`;
+    
+    fetch(csvUrl)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          throw new Error('Received HTML instead of CSV. This usually happens when the file is not found and the server returns a 404 page.');
+        }
+        return response.text();
+      })
       .then(csvText => {
-        parseCSV(csvText);
+        // Remove potential UTF-8 BOM
+        const cleanCsvText = csvText.replace(/^\uFEFF/, '');
+        parseCSV(cleanCsvText);
       })
       .catch(err => {
-        setError(`Failed to load data.csv: ${err.message}`);
+        setError(`Failed to load data.csv: ${err.message}. Please ensure data.csv exists in the public folder and your deployment settings are correct.`);
       });
   }, [parseCSV]);
 
