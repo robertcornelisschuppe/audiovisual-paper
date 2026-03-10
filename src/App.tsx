@@ -7,19 +7,6 @@ import VideoModal from './components/VideoModal';
 import { VideoNode, HierarchyNode } from './types';
 import YouTube from 'react-youtube';
 
-const DEFAULT_CSV = `id,title,parentId,videoUrl,citations
-1,Introduction,,https://www.youtube.com/watch?v=aqz-KE-bpKQ,"Köhler (2026){https://www.degruyterbrill.com/document/doi/10.1515/9783112208205/html}; von Staden (2026) {https://www.degruyterbrill.com/document/doi/10.1515/9783112215753/html}"
-2,Methodology,,https://www.youtube.com/watch?v=9No-FiEInLA,
-3,Results,,https://www.youtube.com/watch?v=ScMzIvxBSi4,
-4,Discussion,,https://www.youtube.com/watch?v=jNQXAC9IVRw,
-5,Conclusion,,https://www.youtube.com/watch?v=60ItHLz5WEA,
-1.1,Background,1,https://www.youtube.com/watch?v=aqz-KE-bpKQ,
-1.2,Research Question,1,https://www.youtube.com/watch?v=9No-FiEInLA,
-1.1.1,Literature Review,1.1,https://www.youtube.com/watch?v=ScMzIvxBSi4,
-1.1.2,Gap Analysis,1.1,https://www.youtube.com/watch?v=jNQXAC9IVRw,
-2.1,Data Collection,2,https://www.youtube.com/watch?v=60ItHLz5WEA,
-2.2,Analysis Framework,2,https://www.youtube.com/watch?v=aqz-KE-bpKQ,`;
-
 export default function App() {
   const [videoData, setVideoData] = useState<VideoNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<HierarchyNode | null>(null);
@@ -48,9 +35,16 @@ export default function App() {
     });
   }, []);
 
-  // Initialize with default data
+  // Initialize with data from CSV file
   React.useEffect(() => {
-    parseCSV(DEFAULT_CSV);
+    fetch('/data.csv')
+      .then(response => response.text())
+      .then(csvText => {
+        parseCSV(csvText);
+      })
+      .catch(err => {
+        setError(`Failed to load data.csv: ${err.message}`);
+      });
   }, [parseCSV]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,116 +129,74 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="w-screen h-screen bg-[#fdfcfb] text-slate-900 font-sans overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
       {/* Intro Video Overlay */}
       <AnimatePresence>
         {showIntro && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center p-4 md:p-12"
+            className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 md:p-12"
           >
-            <div className="relative w-full max-w-6xl aspect-video bg-black rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/10">
-              <YouTube
-                videoId={introVideoId}
-                opts={{
-                  height: '100%',
-                  width: '100%',
-                  playerVars: {
-                    autoplay: 1,
-                    modestbranding: 1,
-                    rel: 0,
-                  },
-                }}
-                onEnd={() => setShowIntro(false)}
-                className="absolute inset-0 w-full h-full"
-              />
-              
-              {/* Skip Button */}
-              <button
-                onClick={() => setShowIntro(false)}
-                className="absolute bottom-8 right-8 px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white rounded-xl font-bold transition-all border border-white/20 z-10"
+            <div className="max-w-5xl w-full">
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="text-center mb-12"
               >
-                Skip Introduction
-              </button>
-
-              {/* Welcome Text */}
-              <div className="absolute top-8 left-8 pointer-events-none z-10">
-                <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full mb-3 inline-block">
-                  Welcome
-                </span>
-                <h2 className="text-white text-2xl font-bold drop-shadow-lg">
-                  How Research Explorer Works
-                </h2>
+                <h1 className="serif text-5xl md:text-7xl font-light italic tracking-tight text-slate-900 mb-6">
+                  {studyTitle}
+                </h1>
+                <div className="w-24 h-px bg-indigo-600 mx-auto opacity-30 mb-6" />
+                <p className="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-[0.4em]">
+                  An Interactive Research Journey
+                </p>
+              </motion.div>
+              
+              <div className="relative aspect-video w-full bg-slate-100 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-200">
+                <YouTube
+                  videoId={introVideoId}
+                  opts={{
+                    height: '100%',
+                    width: '100%',
+                    playerVars: {
+                      autoplay: 1,
+                      modestbranding: 1,
+                      rel: 0,
+                    },
+                  }}
+                  onEnd={() => setShowIntro(false)}
+                  className="absolute inset-0 w-full h-full"
+                />
+                
+                {/* Skip Button Overlay */}
+                <div className="absolute bottom-8 right-8 z-10">
+                  <button
+                    onClick={() => setShowIntro(false)}
+                    className="px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl text-white rounded-2xl font-bold transition-all border border-white/20 hover:scale-105"
+                  >
+                    Skip Introduction
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-            <div className="p-2 bg-blue-600 rounded-lg text-white">
-              <FileText size={24} />
-            </div>
-            <input 
-              type="text" 
-              value={studyTitle} 
-              onChange={(e) => setStudyTitle(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 p-0 font-black w-full md:w-[500px] outline-none"
-              placeholder="Enter Study Title"
-            />
-          </h1>
-          <p className="text-slate-500 text-sm font-medium mt-1">Interactive Video Visualization Tool</p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-xl cursor-pointer hover:bg-slate-800 transition-colors text-sm font-medium">
-            <Upload size={16} />
-            Upload CSV
-            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-          </label>
-          <button 
-            onClick={() => window.open('https://gist.github.com/user/example-csv', '_blank')}
-            className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
-            title="CSV Format Info"
-          >
-            <Info size={20} />
-          </button>
-        </div>
-      </header>
-
       {/* Main Content */}
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="w-full h-full">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
+          <div className="fixed top-4 left-4 z-50 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3 shadow-lg">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-8">
-          {/* Instructions */}
-          <section className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl">
-                <FileText size={24} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold mb-2">How to Navigate</h2>
-                <p className="text-slate-600 leading-relaxed max-w-2xl">
-                  Explore the research by clicking on the nodes below. Main chapters are at the top level, 
-                  while sub-chapters provide more detail as you go deeper. Each node represents a YouTube video summary.
-                </p>
-              </div>
-            </div>
-          </section>
-
+        <div className="w-full h-full">
           {/* Visualization Area */}
-          <section className="relative h-[800px]">
+          <section className="w-full h-full">
             {hierarchy ? (
               <VideoTree 
                 data={hierarchy} 
@@ -254,20 +206,13 @@ export default function App() {
                 }} 
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-white rounded-3xl border border-dashed border-slate-300">
-                <p className="text-slate-400">Loading visualization...</p>
+              <div className="w-full h-full flex items-center justify-center bg-[#fdfcfb]">
+                <p className="serif text-2xl text-slate-300 animate-pulse">Preparing the research map...</p>
               </div>
             )}
           </section>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="mt-12 border-t border-slate-200 py-8 px-6 text-center">
-        <p className="text-slate-400 text-sm">
-          &copy; {new Date().getFullYear()} Research Explorer &bull; Built for Academic Clarity
-        </p>
-      </footer>
 
       {/* Video Modal */}
       <VideoModal

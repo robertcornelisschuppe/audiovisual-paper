@@ -5,6 +5,7 @@ export interface VideoNode {
   videoUrl: string;
   description?: string;
   citations?: string;
+  fullTextUrl?: string;
 }
 
 export interface HierarchyNode extends VideoNode {
