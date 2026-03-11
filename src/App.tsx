@@ -7,14 +7,22 @@ import VideoModal from './components/VideoModal';
 import { VideoNode, HierarchyNode } from './types';
 import YouTube from 'react-youtube';
 
+import metadata from '../metadata.json';
+
 export default function App() {
   const [videoData, setVideoData] = useState<VideoNode[]>([]);
   const [selectedNode, setSelectedNode] = useState<HierarchyNode | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showIntro, setShowIntro] = useState(true);
-  const [studyTitle, setStudyTitle] = useState("The Impact of AI on Modern Research");
+  const [studyTitle] = useState(metadata.paperTitle);
+  const [studySubtitle] = useState(metadata.paperSubtitle);
 
   const introVideoId = "aqz-KE-bpKQ"; // Example intro video ID
+
+  // Set document title
+  React.useEffect(() => {
+    document.title = metadata.paperTitle;
+  }, []);
 
   const parseCSV = useCallback((csvString: string) => {
     Papa.parse(csvString, {
@@ -172,7 +180,7 @@ export default function App() {
                 </h1>
                 <div className="w-24 h-px bg-indigo-600 mx-auto opacity-30 mb-6" />
                 <p className="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-[0.4em]">
-                  An Interactive Research Journey
+                  {studySubtitle}
                 </p>
               </motion.div>
               
