@@ -1,5 +1,7 @@
 {
   "name": "Research Explorer",
-  "description": "Interactive hierarchical video visualization for academic research chapters.",
+  "description": "...",
+  "paperTitle": "Your New Paper Title",
+  "paperSubtitle": "Your New Subtitle",
   "requestFramePermissions": []
 }
